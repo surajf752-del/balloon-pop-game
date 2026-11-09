@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pop! Balloons – Hand Gesture Game</title>
+<style>
+*{box-sizing:border-box;margin:0;font-family:'Trebuchet MS',system-ui,sans-serif;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#123;color:#fff}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#v{position:fixed;left:12px;bottom:12px;width:150px;height:112px;object-fit:cover;transform:scaleX(-1);border-radius:14px;border:3px solid #fff8;display:none;z-index:5;box-shadow:0 6px 20px #0006}
+#v.on{display:block}#v.hand{border-color:#4cff9a}
+.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;z-index:10;overflow:auto;text-align:center}
+.scr.on{display:flex}
+.glass{background:linear-gradient(135deg,#ffffff3d,#ffffff14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid #fff6;border-radius:22px;box-shadow:0 10px 40px #0004;padding:20px;max-width:660px;width:100%}
+h1{font-size:clamp(44px,10vw,96px);font-weight:900;line-height:.95;letter-spacing:-2px;background:linear-gradient(90deg,#ff5e7e,#ffb347,#ffe66d,#5eff9a,#5ec8ff,#c77dff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #0003)}
+h2{font-size:28px;margin-bottom:8px}p,li{line-height:1.5}
+.sub{font-size:18px;opacity:.9;letter-spacing:4px;text-transform:uppercase}
+.b{border:0;border-radius:999px;padding:13px 26px;font-size:18px;font-weight:800;color:#fff;cursor:pointer;background:linear-gradient(180deg,#ff7aa2,#ff3d77);box-shadow:0 5px 0 #b01f4e,0 10px 20px #0004;transition:transform .12s;min-width:220px}
+.b:hover{transform:translateY(-2px) scale(1.04)}.b:active{transform:translateY(4px);box-shadow:0 1px 0 #b01f4e}
+.b.alt{background:linear-gradient(180deg,#5ec8ff,#2b8de0);box-shadow:0 5px 0 #1a5fa0,0 10px 20px #0004}
+.b.s{min-width:0;padding:8px 14px;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:10px 0}
+.card{padding:14px;border-radius:16px;background:#ffffff26;border:1px solid #fff5}
+.card h3{margin-bottom:4px}.card p{font-size:14px;margin-bottom:8px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:9px 0;text-align:left}
+input[type=range]{width:55%}select{padding:6px;border-radius:8px;max-width:55%}
+#hud{position:fixed;top:0;left:0;right:0;display:none;gap:8px;padding:10px;z-index:6;flex-wrap:wrap;justify-content:center;pointer-events:none}
+#hud.on{display:flex}#hud button{pointer-events:auto}
+.pill{background:#0006;backdrop-filter:blur(8px);padding:6px 14px;border-radius:999px;font-weight:800;font-size:clamp(13px,2.4vw,19px);border:1px solid #fff4}
+#hint{position:fixed;bottom:18%;left:0;right:0;text-align:center;font-size:clamp(18px,3vw,28px);font-weight:800;text-shadow:0 2px 8px #000;display:none;z-index:6;pointer-events:none}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#000a;padding:10px 20px;border-radius:999px;z-index:30;opacity:0;transition:opacity .3s;font-weight:800;pointer-events:none}
+.demo{position:relative;height:110px;margin:8px auto;width:200px;background:#0003;border-radius:14px;overflow:hidden}
+.demo i{position:absolute;left:80px;width:36px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ff5e7e 50%,#b01f4e);animation:up 3s infinite}
+.demo b{position:absolute;width:16px;height:16px;border-radius:50%;background:#7dffd0;box-shadow:0 0 14px #7dffd0;animation:fg 3s infinite}
+@keyframes up{0%{top:120px;opacity:1}70%{top:25px;opacity:1}71%,100%{top:25px;opacity:0;transform:scale(1.8)}}
+@keyframes fg{0%{left:20px;top:80px}60%{left:80px;top:45px}75%{left:100px;top:32px}100%{left:170px;top:80px}}
+li{text-align:left;margin-left:20px}
+</style></head><body>
+<canvas id="c"></canvas><video id="v" playsinline muted></video>
+<div id="hud"><div class="pill" id="sc"></div><div class="pill" id="tm"></div><div class="pill" id="lv"></div><div class="pill" id="cb"></div><div class="pill" id="li"></div><div class="pill" id="stt"></div><button class="b s" data-a="pause">❚❚ Pause</button></div>
+<div id="hint">☝ Hold your hand up and point with your index finger</div><div id="toast"></div>
+
+<div class="scr on" id="home"><h1>POP!<br>BALLOONS</h1><div class="sub">Hand Gesture Edition</div>
+<button class="b" data-a="play" data-v="classic">▶ Play Now</button>
+<button class="b alt" data-a="go" data-v="modes">Game Modes</button>
+<button class="b alt" data-a="go" data-v="how">How to Play</button>
+<button class="b alt" data-a="stats">Stats &amp; High Scores</button>
+<button class="b alt" data-a="go" data-v="set">Settings</button></div>
+
+<div class="scr" id="modes"><div class="glass"><h2>Game Modes</h2><div class="grid" id="mg"></div><button class="b s alt" data-a="go" data-v="home">← Back</button></div></div>
+
+<div class="scr" id="how"><div class="glass"><h2>How to Play</h2><div class="demo"><i></i><b></b></div>
+<ul><li>Allow camera access when asked. Nothing is recorded or uploaded – tracking runs in your browser.</li><li>Raise a hand so the camera sees it. Your <b>index fingertip</b> becomes the glowing pointer.</li><li>Touch a balloon with the pointer – or swipe through several – to pop them.</li><li>★ Golden +50 · 🌈 Rainbow +100 · ? Mystery = random reward · ❄ Frozen slows time · ! Bomb costs points.</li><li>Chain pops quickly for a combo multiplier.</li></ul><br>
+<button class="b" data-a="play" data-v="practice">Practice Gestures</button> <button class="b s alt" data-a="go" data-v="home">← Back</button></div></div>
+
+<div class="scr" id="set"><div class="glass"><h2>Settings</h2>
+<div class="row">Sound effects<input type="range" id="s_sfx" min="0" max="1" step=".05"></div>
+<div class="row">Music<input type="range" id="s_mus" min="0" max="1" step=".05"></div>
+<div class="row">Mute all<input type="checkbox" id="s_mute"></div>
+<div class="row">Tracking responsiveness<input type="range" id="s_sens" min="0" max="1" step=".05"></div>
+<div class="row">Balloon speed<input type="range" id="s_spd" min=".5" max="1.6" step=".05"></div>
+<div class="row">Visual effects<select id="s_q"><option value="1">High</option><option value="0">Low (faster)</option></select></div>
+<div class="row">Theme<select id="s_theme"><option value="0">Sunny Sky</option><option value="1">Sunset</option><option value="2">Night</option></select></div>
+<div class="row">Camera<select id="s_cam"><option value="">Default (allow camera first)</option></select></div>
+<button class="b s alt" data-a="fs">⛶ Fullscreen</button> <button class="b s alt" data-a="go" data-v="home">← Back</button></div></div>
+
+<div class="scr" id="stats"><div class="glass"><h2>Statistics</h2><div id="sb"></div><br><button class="b s alt" data-a="go" data-v="home">← Back</button></div></div>
+<div class="scr" id="pause"><div class="glass"><h2>Paused</h2><button class="b" data-a="resume">Resume</button> <button class="b alt" data-a="restart">Restart</button> <button class="b alt" data-a="quit">Quit to Menu</button></div></div>
+<div class="scr" id="over"><div class="glass"><h2 id="ot">Game Over</h2><div id="ob"></div><br><button class="b" data-a="restart">Play Again</button> <button class="b alt" data-a="go" data-v="home">Menu</button></div></div>
+<div class="scr" id="err"><div class="glass"><h2 id="et">Loading…</h2><p id="em"></p><br><button class="b s alt" data-a="go" data-v="home">← Back</button></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],C=$('#c'),X=C.getContext('2d'),R=Math.random,TAU=Math.PI*2,V=$('#v');
+const CDN='https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/';
+let W,H;function rs(){const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;C.width=W*d;C.height=H*d;X.setTransform(d,0,0,d,0,0)}addEventListener('resize',rs);rs();
+/* ---------- save data ---------- */
+const D={sfx:.8,mus:.4,mute:0,sens:.6,spd:1,q:1,theme:0,cam:''};
+let S={popped:0,games:0,best:0,combo:0,react:0,hit:0,miss:0,golden:0,scores:[],ach:{},set:{...D}};
+try{const j=JSON.parse(localStorage.getItem('bp3d')||'{}');S={...S,...j,set:{...D,...(j.set||{})}}}catch(e){}
+const save=()=>{try{localStorage.setItem('bp3d',JSON.stringify(S))}catch(e){}};
+/* ---------- audio (Web Audio synth) ---------- */
+let AC,mg,mus,sfx,NB,mode='classic';
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+mg=AC.createGain();mus=AC.createGain();sfx=AC.createGain();mus.connect(mg);sfx.connect(mg);mg.connect(AC.destination);
+NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=R()*2-1;vol();song()}
+if(AC.state=='suspended')AC.resume()}
+const vol=()=>{if(AC){mg.gain.value=S.set.mute?0:1;mus.gain.value=S.set.mus*.45;sfx.gain.value=S.set.sfx}};
+function tone(f,d,ty='sine',v=.3,t0=0,dest,f2){if(!AC)return;dest=dest||sfx;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+t0;o.type=ty;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.02)}
+function noise(d,fq,v){if(!AC)return;const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain(),t=AC.currentTime;s.buffer=NB;f.type='bandpass';f.frequency.value=fq;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f);f.connect(g);g.connect(sfx);s.start(t);s.stop(t+d)}
+const SND={n(){noise(.14,1800+R()*900,.8);tone(520+R()*120,.09,'triangle',.25,0,sfx,140)},
+g(){SND.n();[880,1320,1760].forEach((f,i)=>tone(f,.25,'sine',.18,.04*i))},
+r(){SND.n();[523,659,784,1047,1319].forEach((f,i)=>tone(f,.2,'triangle',.2,.05*i))},
+b(){noise(.6,220,1);tone(110,.5,'sawtooth',.4,0,sfx,35)},
+m(){SND.n();tone(300,.3,'square',.15,0,sfx,1200)},
+f(){SND.n();tone(1600,.35,'sine',.25,0,sfx,300)},
+bonus(){[660,880,1100,1320].forEach((f,i)=>tone(f,.15,'square',.12,.07*i))},
+beep(f,d){tone(f||520,d||.15,'square',.15)},
+over(){[440,370,311,247].forEach((f,i)=>tone(f,.35,'sawtooth',.15,.2*i))}};
+let ms=0;function song(){if(AC&&!S.set.mute){const ro=[0,5,7,3][(ms>>3)%4],n=[0,4,7,12,7,4,9,5][ms%8];tone(261.6*2**((ro+n)/12),.18,'triangle',.22,0,mus);if(ms%4==0)tone(65.4*2**(ro/12),.3,'sine',.35,0,mus);if(ms%2)tone(1046,.03,'square',.03,0,mus);ms++}
+setTimeout(song,mode=='relax'||mode=='practice'?300:165)}
+/* ---------- hand tracking (MediaPipe Hands) ---------- */
+let hands,stream,tips=[],raw=[],lastHand=0,camOn=0,busy=0;
+const mp=l=>[Math.max(0,Math.min(W,((1-l.x-.5)*1.25+.5)*W)),Math.max(0,Math.min(H,((l.y-.5)*1.25+.5)*H))];
+function onHands(r){const L=r.multiHandLandmarks||[];raw=L;if(L.length)lastHand=performance.now();
+L.forEach((h,i)=>{const[x,y]=mp(h[8]);let t=tips[i];if(!t)t=tips[i]={x,y,px:x,py:y,tx:x,ty:y,tr:[]};t.tx=x;t.ty=y});tips.length=L.length}
+async function startCam(){if(stream&&hands)return true;
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){return fail('Camera unavailable','Your browser blocks camera access on this page. Open it via https:// or http://localhost (not by double‑click in some browsers) in a modern browser.')}
+if(typeof Hands==='undefined')return fail('Hand tracking could not load','The MediaPipe library comes from cdn.jsdelivr.net. Check your internet connection and reload.');
+$('#et').textContent='Starting camera…';$('#em').textContent='Please click “Allow” when your browser asks for camera access.';show('err');
+try{if(!stream){stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:S.set.cam?{exact:S.set.cam}:undefined,width:640,height:480,facingMode:'user'},audio:false});V.srcObject=stream;await V.play();V.classList.add('on');listCams()}
+if(!hands){$('#et').textContent='Loading hand tracking…';$('#em').textContent='Downloading the model (first time only).';
+hands=new Hands({locateFile:f=>CDN+f});hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:.6,minTrackingConfidence:.5});hands.onResults(onHands);await hands.initialize()}
+camOn=1;camLoop();return true}
+catch(e){stopCam();const n=e&&e.name;return fail(n=='NotAllowedError'?'Camera permission denied':n=='NotFoundError'?'No camera found':'Could not start',n=='NotAllowedError'?'Allow camera access for this site in your browser’s address-bar/site settings, then press Play again. The game is controlled entirely by your hand, so it needs the camera.':n=='NotFoundError'?'Connect a webcam (or use a phone) and try again.':String(e&&e.message||e))}}
+function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;camOn=0;V.classList.remove('on');tips.length=0}
+function fail(t,m){$('#et').textContent=t;$('#em').textContent=m;show('err');return false}
+async function camLoop(){if(!stream||!hands)return;if(!busy&&V.readyState>=2){busy=1;try{await hands.send({image:V})}catch(e){}busy=0}
+V.requestVideoFrameCallback?V.requestVideoFrameCallback(camLoop):requestAnimationFrame(camLoop)}
+async function listCams(){try{const d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind=='videoinput');$('#s_cam').innerHTML='<option value="">Default</option>'+d.map((x,i)=>`<option value="${x.deviceId}">${x.label||'Camera '+(i+1)}</option>`).join('');$('#s_cam').value=S.set.cam}catch(e){}}
+/* ---------- game data ---------- */
+const MODES={classic:{n:'Classic',t:60,d:'Pop as many as you can in 60 seconds.'},time:{n:'Time Challenge',d:'Choose 30, 60 or 120 seconds.'},endless:{n:'Endless',d:'No timer – it just keeps getting harder.'},survival:{n:'Survival',lives:5,d:'Every escaped balloon costs a life.'},accuracy:{n:'Accuracy',t:60,d:'Hit the centre of balloons for bonus points.'},relax:{n:'Relax',d:'No timer, no lives, no pressure.'},practice:{n:'Practice',d:'Learn the gestures. Your hand is drawn on screen.'}};
+const HUES=[0,25,48,140,190,215,270,320],BASE={g:'#ffc928',b:'#2a2a35',m:'#9b5cf6',f:'#7fd8ff'},PTS={n:10,g:50,r:100,b:-50,m:25,f:10};
+const TH=[['#4db8ff','#d9f7ff'],['#6a3de8','#ffa07a'],['#070b24','#2b2a6e']];
+const ACH={first:'First Pop',hund:'100 Balloons Popped',master:'Balloon Master (1000)',gold:'Golden Hunter (10 golden)',combo:'Combo King (20 combo)',perf:'Perfect Accuracy (20+ pops, none missed)'};
+let st='menu',G={lvl:1,time:0},B=[],P=[],T=[],tcT=60,menuSp=0;
+function toast(m){const e=$('#toast');e.textContent=m;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,2200)}
+function ach(k){if(S.ach[k])return;S.ach[k]=1;toast('🏆 '+ACH[k]);SND.bonus();save()}
+function newGame(m){mode=m;const M=MODES[m];G={score:0,time:m=='time'?tcT:M.t||0,timed:!!(M.t||m=='time'),lives:M.lives||0,lvl:1,combo:0,maxc:0,pop:0,esc:0,gold:0,dbl:0,slow:0,frz:0,cd:3.99,sp:0,shake:0,ban:0,lastPop:-9,conf:0};B=[];P=[];T=[];st='count';show('');$('#hud').classList.add('on')}
+function mk(){const l=G.lvl,rl=mode=='relax'||mode=='practice',k=Math.max(.75,Math.min(1.3,Math.min(W,H)/800+.35)),r=(32+R()*26)*k;let c=R(),ty='n';
+for(const[a,p]of [['g',.06],['r',l>2?.03:0],['b',l>1&&!rl?.08:0],['m',l>1?.05:0],['f',l>1?.05:0]]){if(c<p){ty=a;break}c-=p}
+return{x:r+R()*(W-2*r),y:H+r*1.5,r,vy:(55+R()*45)*(1+.1*(l-1))*(rl?.7:1),ph:R()*TAU,h:HUES[R()*8|0],ty,age:0,vis:0,rot:0}}
+const bcol=b=>b.ty=='n'?`hsl(${b.h},85%,55%)`:b.ty=='r'?`hsl(${R()*360},90%,60%)`:BASE[b.ty];
+function mv(b,dt,f){b.age+=dt;b.y-=b.vy*f*dt;b.x+=Math.sin(b.ph+b.age*1.6)*22*dt;b.rot=Math.sin(b.age*1.3+b.ph)*.14;if(b.y<H-b.r)b.vis+=dt}
+function burst(x,y,c,n){n=Math.round(n*(S.set.q?1:.45));for(let i=0;i<n;i++){const a=R()*TAU,s=80+R()*320;P.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,l:.6+R()*.6,c:Array.isArray(c)?c[R()*c.length|0]:c,s:2+R()*5,sq:R()<.4})}P.push({x,y,ring:1,l:.35,c:'#fff'})}
+const txt=(x,y,s,c)=>T.push({x,y,s,c:c||'#fff',l:1.1});
+function hit(ax,ay,bx,by,b,pad){const k=1/1.18,py=b.y*k;ay*=k;by*=k;const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;let u=l?((b.x-ax)*dx+(py-ay)*dy)/l:0;u=Math.max(0,Math.min(1,u));const qx=ax+u*dx-b.x,qy=ay+u*dy-py;return qx*qx+qy*qy<(b.r+pad)**2}
+function pop(b,tx,ty,chain){if(b.dead)return;b.dead=1;SND[b.ty]();const col=bcol(b),cm=1+Math.min(4,G.combo/5|0);burst(b.x,b.y,b.ty=='r'?['#f55','#fa3','#ee4','#5d5','#5bf','#a6f']:[col,'#fff'],b.ty=='b'?40:24);
+if(b.ty=='b'){G.score=Math.max(0,G.score+PTS.b);G.combo=0;G.shake=.5;txt(b.x,b.y,'BOOM '+PTS.b,'#ff5050');return}
+S.popped++;S.hit++;G.pop++;
+if(!chain){const now=performance.now()/1000;G.combo=now-G.lastPop<1.3?G.combo+1:1;G.lastPop=now}
+G.maxc=Math.max(G.maxc,G.combo);let p=PTS[b.ty]*(G.dbl>0?2:1)*(1+Math.min(4,G.combo/5|0));void cm;
+if(b.ty=='g'){G.gold++;S.golden++}
+if(mode=='accuracy'&&tx!=null&&Math.hypot(tx-b.x,ty-b.y)<b.r*.4){p+=15;txt(b.x,b.y-30,'PERFECT +15','#7dffd0');SND.bonus()}
+if(b.vis>.15&&(!S.react||b.vis*1000<S.react))S.react=Math.round(b.vis*1000);
+if(b.ty=='f'){G.frz=5;txt(b.x,b.y-30,'FROZEN ❄','#aef')}
+if(b.ty=='m')mystery(b);
+G.score+=p;txt(b.x,b.y,'+'+p,b.ty=='g'?'#ffd84a':'#fff');
+if(G.combo&&G.combo%5==0){txt(W/2,H*.3,G.combo+' COMBO!','#ffe66d');SND.bonus()}
+if(S.popped==1)ach('first');if(S.popped>=100)ach('hund');if(S.popped>=1000)ach('master');if(S.golden>=10)ach('gold');if(G.maxc>=20)ach('combo');
+const lv=1+(G.pop/10|0);if(lv>G.lvl){G.lvl=lv;G.ban=1.6;SND.bonus()}}
+function mystery(b){const o=[['⏱ +10s',()=>G.timed?G.time+=10:G.score+=100],['❤ Extra life',()=>G.lives?G.lives=Math.min(9,G.lives+1):G.score+=150],['×2 Double points!',()=>G.dbl=10],['🐌 Slow motion',()=>G.slow=6],['💥 Screen blast!',()=>{B.forEach(o=>{if(!o.dead&&Math.hypot(o.x-b.x,o.y-b.y)<260){if(o.ty=='b'){o.dead=1;burst(o.x,o.y,'#777',10)}else pop(o,null,null,1)}})}]][R()*5|0];
+o[1]();txt(b.x,b.y-34,o[0],'#d9b8ff');toast(o[0]);SND.bonus()}
+/* ---------- update ---------- */
+let tmr=0;
+function frame(dt,t){
+const k=Math.min(1,dt*(8+S.set.sens*30));
+tips.forEach(p=>{p.x+=(p.tx-p.x)*k;p.y+=(p.ty-p.y)*k;p.tr.push([p.x,p.y]);if(p.tr.length>9)p.tr.shift()});
+if(st=='count'){const p=G.cd;G.cd-=dt;if(G.cd>0&&Math.ceil(G.cd)!=Math.ceil(p))SND.beep(520);if(G.cd<=0){SND.beep(1040,.4);st='play'}}
+else if(st=='play'){
+G.dbl=Math.max(0,G.dbl-dt);G.slow=Math.max(0,G.slow-dt);G.frz=Math.max(0,G.frz-dt);G.shake=Math.max(0,G.shake-dt);G.ban=Math.max(0,G.ban-dt);
+const f=(G.slow>0?.45:1)*(G.frz>0?.4:1)*S.set.spd;G.sp-=dt*f;
+if(G.sp<=0){B.push(mk());G.sp=Math.max(.32,1.05-.065*G.lvl)*(mode=='relax'||mode=='practice'?1.3:1)*(.6+R()*.8)}
+for(const b of B){mv(b,dt,f);if(b.y<-b.r*3.5){b.dead=1;if(b.ty!='b'&&b.ty!='f'){G.esc++;S.miss++;G.combo=0;if(MODES[mode].lives){G.lives--;SND.beep(200,.25)}}}}
+for(const p of tips){for(const b of B)if(!b.dead&&hit(p.px,p.py,p.x,p.y,b,10))pop(b,p.x,p.y);p.px=p.x;p.py=p.y}
+if(G.timed){G.time-=dt;if(G.time<=0)end()}
+if(MODES[mode].lives&&G.lives<=0)end();
+$('#hint').style.display=performance.now()-lastHand>1500?'block':'none'}
+else{$('#hint').style.display='none';if(st=='menu'||st=='over'){menuSp-=dt;if(menuSp<=0&&B.length<16){const b=mk();b.vy=40+R()*40;B.push(b);menuSp=.6}B.forEach(b=>mv(b,dt,1));if(st=='over'&&G.conf>0){G.conf-=dt;burst(R()*W,-10,['#f55','#fa3','#ee4','#5d5','#5bf','#a6f'],3)}}}
+B=B.filter(b=>!b.dead&&b.y>-b.r*4);
+P.forEach(p=>{p.l-=dt;if(!p.ring){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=520*dt}});P=P.filter(p=>p.l>0);T.forEach(e=>{e.l-=dt;e.y-=40*dt});T=T.filter(e=>e.l>0);
+draw(t);if(st=='play'||st=='count')hud()}
+/* ---------- drawing ---------- */
+function bg(t){const g=X.createLinearGradient(0,0,0,H),th=TH[S.set.theme];g.addColorStop(0,th[0]);g.addColorStop(1,th[1]);X.fillStyle=g;X.fillRect(0,0,W,H);
+if(S.set.theme==2){X.fillStyle='#fff';for(let i=0;i<50;i++){X.globalAlpha=.4+.6*Math.abs(Math.sin(t+i));X.fillRect(i*977%W,i*613%H,2,2)}X.globalAlpha=1}
+else{X.fillStyle='#ffffffaa';for(let i=0;i<5;i++){const x=((i*337+t*(10+i*4))%(W+360))-180,y=H*(.08+i*.15),s=40+i*9;[[0,0,1],[s*.9,-s*.2,1.1],[s*1.8,0,.9]].forEach(c=>{X.beginPath();X.arc(x+c[0],y+c[1],s*.6*c[2],0,TAU);X.fill()})}}}
+function drawB(b){X.save();X.translate(b.x,b.y);X.rotate(b.rot);const r=b.r,ry=r*1.18;
+X.strokeStyle='#fffc';X.lineWidth=1.6;X.beginPath();X.moveTo(0,ry+6);X.quadraticCurveTo(Math.sin(b.age*3)*12,ry+r*1.1,Math.sin(b.age*2+1)*9,ry+r*2.3);X.stroke();
+let fill;if(b.ty=='r'){fill=X.createLinearGradient(-r,-ry,r,ry);for(let i=0;i<=6;i++)fill.addColorStop(i/6,`hsl(${(i*60+performance.now()/8)%360},90%,60%)`)}else fill=b.ty=='n'?`hsl(${b.h},85%,55%)`:BASE[b.ty];
+X.shadowColor='#0004';X.shadowBlur=S.set.q?16:0;X.fillStyle=fill;X.beginPath();X.ellipse(0,0,r,ry,0,0,TAU);X.fill();X.shadowBlur=0;
+const o=X.createRadialGradient(-r*.35,-ry*.4,r*.08,-r*.1,-ry*.1,r*1.25);o.addColorStop(0,'rgba(255,255,255,.6)');o.addColorStop(.4,'rgba(255,255,255,0)');o.addColorStop(1,'rgba(0,0,40,.42)');X.fillStyle=o;X.fill();
+X.fillStyle=b.ty=='n'?`hsl(${b.h},85%,35%)`:'#0005';X.beginPath();X.moveTo(0,ry-2);X.lineTo(-6,ry+8);X.lineTo(6,ry+8);X.fill();
+X.fillStyle='#fffd';X.beginPath();X.ellipse(-r*.4,-ry*.5,r*.15,ry*.27,-.5,0,TAU);X.fill();X.beginPath();X.arc(-r*.2,-ry*.78,r*.06,0,TAU);X.fill();
+const ic={g:'★',b:'!',m:'?',f:'❄'}[b.ty];if(ic){X.font=`900 ${r*.9}px sans-serif`;X.textAlign='center';X.textBaseline='middle';X.fillStyle=b.ty=='b'?'#ff4d4d':'#fff';X.fillText(ic,0,2)}X.restore()}
+function draw(t){X.save();if(G.shake>0)X.translate((R()-.5)*14,(R()-.5)*14);bg(t);B.forEach(drawB);
+P.forEach(p=>{X.globalAlpha=Math.max(0,p.l*1.6);if(p.ring){X.strokeStyle=p.c;X.lineWidth=4;X.beginPath();X.arc(p.x,p.y,(.35-p.l)*260,0,TAU);X.stroke()}else{X.fillStyle=p.c;p.sq?X.fillRect(p.x,p.y,p.s,p.s*1.6):(X.beginPath(),X.arc(p.x,p.y,p.s,0,TAU),X.fill())}});X.globalAlpha=1;
+X.textAlign='center';X.textBaseline='middle';T.forEach(e=>{X.globalAlpha=Math.min(1,e.l*1.5);X.font='900 26px sans-serif';X.lineWidth=5;X.strokeStyle='#0008';X.strokeText(e.s,e.x,e.y);X.fillStyle=e.c;X.fillText(e.s,e.x,e.y)});X.globalAlpha=1;
+if(mode=='practice'&&st=='play'){X.fillStyle='#fff';raw.forEach(h=>h.forEach(l=>{const[x,y]=mp(l);X.beginPath();X.arc(x,y,4,0,TAU);X.fill()}))}
+tips.forEach(p=>{p.tr.forEach((q,i)=>{X.globalAlpha=i/p.tr.length*.5;X.fillStyle='#7dffd0';X.beginPath();X.arc(q[0],q[1],4+i,0,TAU);X.fill()});X.globalAlpha=1;const g=X.createRadialGradient(p.x,p.y,0,p.x,p.y,36);g.addColorStop(0,'#fff');g.addColorStop(.25,'#7dffd0');g.addColorStop(1,'rgba(125,255,208,0)');X.fillStyle=g;X.beginPath();X.arc(p.x,p.y,36,0,TAU);X.fill()});
+if(st=='count'){X.font='900 '+Math.min(W,H)*.35+'px sans-serif';X.fillStyle='#fff';X.strokeStyle='#0006';X.lineWidth=10;const s=Math.ceil(G.cd);X.strokeText(s,W/2,H/2);X.fillText(s,W/2,H/2)}
+if(G.ban>0&&st=='play'){X.globalAlpha=Math.min(1,G.ban);X.font='900 '+Math.min(W*.14,110)+'px sans-serif';X.fillStyle='#ffe66d';X.strokeStyle='#0007';X.lineWidth=8;X.strokeText('LEVEL '+G.lvl,W/2,H*.4);X.fillText('LEVEL '+G.lvl,W/2,H*.4);X.globalAlpha=1}
+X.restore()}
+function hud(){const m=MODES[mode],h=performance.now()-lastHand<400&&tips.length;
+$('#sc').textContent='Score '+G.score;$('#tm').textContent=G.timed?'⏱ '+Math.max(0,Math.ceil(G.time))+'s':'⏱ ∞';$('#lv').textContent='Level '+G.lvl;$('#cb').textContent='Combo ×'+(1+Math.min(4,G.combo/5|0))+(G.dbl>0?' · 2× pts':'');
+$('#li').textContent=m.lives?'❤'.repeat(Math.max(0,G.lives)):'';$('#li').style.display=m.lives?'':'none';
+$('#stt').textContent=camOn?(h?'🟢 Hand Detected':'🟠 No Hand Detected'):'Camera off';V.classList.toggle('hand',!!h)}
+/* ---------- flow ---------- */
+function show(id){$$('.scr').forEach(e=>e.classList.toggle('on',e.id==id));if(id)$('#hud').classList.remove('on')}
+function end(quiet){if(st=='over'||st=='menu')return;const hs=G.score>S.best&&G.score>0;S.games++;S.combo=Math.max(S.combo,G.maxc);
+if(G.pop>=20&&G.esc==0&&mode!='practice')ach('perf');
+if(G.score>0&&mode!='practice')S.scores=[...S.scores,{s:G.score,m:MODES[mode].n,d:new Date().toLocaleDateString()}].sort((a,b)=>b.s-a.s).slice(0,10);
+if(hs)S.best=G.score;save();$('#hud').classList.remove('on');
+if(quiet){st='menu';show('home');return}
+st='over';G.conf=hs?4:0;SND.over();const tot=G.pop+G.esc;
+$('#ot').textContent=hs?'🎉 NEW HIGH SCORE!':'Game Over';
+$('#ob').innerHTML=`<h1 style="font-size:60px">${G.score}</h1><p>${MODES[mode].n} · Level ${G.lvl}<br>Popped ${G.pop} · Missed ${G.esc} · Accuracy ${tot?Math.round(G.pop/tot*100):100}%<br>Best combo ${G.maxc} · Personal best ${S.best}</p>`;show('over')}
+function stats(){const tot=S.hit+S.miss;$('#sb').innerHTML=`<div class="grid">${[['Balloons popped',S.popped],['Highest score',S.best],['Accuracy',tot?Math.round(S.hit/tot*100)+'%':'–'],['Longest combo',S.combo],['Best reaction',S.react?S.react+' ms':'–'],['Games played',S.games]].map(a=>`<div class="card"><h3>${a[1]}</h3><p>${a[0]}</p></div>`).join('')}</div><h2>Achievements</h2><p>${Object.keys(ACH).map(k=>(S.ach[k]?'🏆 ':'🔒 ')+ACH[k]).join('<br>')}</p><h2 style="margin-top:12px">Top Scores</h2><p>${S.scores.slice(0,5).map((x,i)=>`${i+1}. <b>${x.s}</b> – ${x.m} (${x.d})`).join('<br>')||'No scores yet – go pop some balloons!'}</p>`;show('stats')}
+async function play(m){ac();if(m=='time')tcT=tcT||60;if(await startCam()){newGame(m)}}
+function act(a,v){ac();
+({go:()=>show(v),play:()=>play(v),tc:()=>{tcT=+v;play('time')},stats,fs:()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}},
+pause:()=>{if(st=='play'){st='pause';show('pause')}},resume:()=>{if(st=='pause'){st='play';show('');$('#hud').classList.add('on')}},
+restart:()=>{if(st=='pause'||st=='over'){if(st=='pause')end(1);play(mode)}},quit:()=>{end(1)}}[a]||(()=>{}))()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)act(b.dataset.a,b.dataset.v)});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&st=='play')act('pause')});
+$('#mg').innerHTML=Object.keys(MODES).filter(k=>k!='practice').map(k=>`<div class="card"><h3>${MODES[k].n}</h3><p>${MODES[k].d}</p>${k=='time'?[30,60,120].map(s=>`<button class="b s" data-a="tc" data-v="${s}">${s}s</button>`).join(' '):`<button class="b s" data-a="play" data-v="${k}">Play</button>`}</div>`).join('');
+/* settings */
+const bind=(id,key,fn)=>{const e=$('#s_'+id);e.type=='checkbox'?e.checked=!!S.set[key]:e.value=S.set[key];e.oninput=e.onchange=()=>{S.set[key]=e.type=='checkbox'?e.checked?1:0:(isNaN(e.value)||e.value===''?e.value:+e.value);save();fn&&fn()}};
+bind('sfx','sfx',vol);bind('mus','mus',vol);bind('mute','mute',vol);bind('sens','sens');bind('spd','spd');bind('q','q');bind('theme','theme');
+$('#s_cam').onchange=async()=>{S.set.cam=$('#s_cam').value;save();if(stream){stopCam();await startCam();show('set')}};
+/* main loop */
+let last=performance.now();(function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;frame(dt,n/1000);requestAnimationFrame(loop)})(last);
+</script></body></html>
